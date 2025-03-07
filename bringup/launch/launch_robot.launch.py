@@ -11,11 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+
+from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import RegisterEventHandler
+from launch.actions import RegisterEventHandler, IncludeLaunchDescription, TimerAction
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -23,6 +27,9 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     # Get URDF via xacro
+
+    package_name='diffdrive_arduino'
+
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -96,12 +103,22 @@ def generate_launch_description():
         )
     )
 
+    #include lidar launch file
+    lidar = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory(package_name),'launch','rp_lidar.launch.py'
+        )])
+    )
+
     nodes = [
         control_node,
         robot_state_pub_node,
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         delay_robot_controller_spawner_after_joint_state_broadcaster_spawner,
+        lidar
+        
     ]
+
 
     return LaunchDescription(nodes)
